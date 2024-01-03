@@ -24,7 +24,7 @@ class PhoneNumberStr(str):
 class BaseResponse(BaseModel):
 
     message: str
-
+    code: int
 
 class HTTPError(BaseModel):
 
