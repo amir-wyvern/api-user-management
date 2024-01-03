@@ -7,7 +7,10 @@ from schemas import (
     UserRegister,
     HTTPError,
     UserUpdateInfo,
-    UserInfoResponse
+    UserUpdatePassword,
+    UserInfoResponse,
+    UserUpdateRole,
+    UserDelete
 )
 from database_service.session import get_grpc
 from grpc_utils.database_pb2_grpc import DataBaseStub
@@ -46,20 +49,46 @@ def create_new_user(request: UserRegister, stub: DataBaseStub = Depends(get_grpc
 @router.put('/info/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
 def edit_user_information(request: UserUpdateInfo, stub: DataBaseStub = Depends(get_grpc)):
 
-    return BaseResponse(message= 'message test', code= 1200)
+    data = {
+        'username': request.username,
+        'name': request.new_name,
+        'email': request.new_email,
+        'phone_number': request.new_phone_number
+    }
+
+    stub.ModifyUserInfo(pb2.RequestModifyUserInfo(**data))
+
+    return BaseResponse(message= 'message test', code= 1200) 
 
 @router.put('/pass/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
-def change_user_password(request: UserUpdateInfo, stub: DataBaseStub = Depends(get_grpc)):
+def change_user_password(request: UserUpdatePassword, stub: DataBaseStub = Depends(get_grpc)):
 
+    data = {
+        'username': request.username,
+        'password': request.new_password
+    }
+    
+    stub.ModifyUserPassword(pb2.RequestModifyUserPassword(**data))
     return BaseResponse(message= 'message test', code= 1200)
 
 @router.put('/role/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
-def change_user_role(request: UserUpdateInfo, stub: DataBaseStub = Depends(get_grpc)):
+def change_user_role(request: UserUpdateRole, stub: DataBaseStub = Depends(get_grpc)):
 
+    data = {
+        'username': request.username,
+        'role': request.new_role
+    }
+
+    stub.ModifyUserRole(pb2.RequestModifyUserRole(**data))
     return BaseResponse(message= 'message test', code= 1200)
 
 @router.delete('/delete', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
-def delete_user(request: UserUpdateInfo, stub: DataBaseStub = Depends(get_grpc)):
+def delete_user(request: UserDelete, stub: DataBaseStub = Depends(get_grpc)):
+    
+    data = {
+        'username': request.username
+    }
 
+    stub.DeleteUser(pb2.RequestDeleteUser(**data))
     return BaseResponse(message= 'message test', code= 1200)
 
