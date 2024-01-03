@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-import database_pb2 as database__pb2
+import grpc_utils.database_pb2 as database__pb2
 
 
 class DataBaseStub(object):
@@ -27,6 +27,11 @@ class DataBaseStub(object):
         self.ModifyUserPassword = channel.unary_unary(
                 '/DataBase/ModifyUserPassword',
                 request_serializer=database__pb2.RequestModifyUserPassword.SerializeToString,
+                response_deserializer=database__pb2.BaseResponse.FromString,
+                )
+        self.ModifyUserRole = channel.unary_unary(
+                '/DataBase/ModifyUserRole',
+                request_serializer=database__pb2.RequestModifyUserRole.SerializeToString,
                 response_deserializer=database__pb2.BaseResponse.FromString,
                 )
         self.ModifyUserInfo = channel.unary_unary(
@@ -62,6 +67,12 @@ class DataBaseServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ModifyUserRole(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ModifyUserInfo(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -90,6 +101,11 @@ def add_DataBaseServicer_to_server(servicer, server):
             'ModifyUserPassword': grpc.unary_unary_rpc_method_handler(
                     servicer.ModifyUserPassword,
                     request_deserializer=database__pb2.RequestModifyUserPassword.FromString,
+                    response_serializer=database__pb2.BaseResponse.SerializeToString,
+            ),
+            'ModifyUserRole': grpc.unary_unary_rpc_method_handler(
+                    servicer.ModifyUserRole,
+                    request_deserializer=database__pb2.RequestModifyUserRole.FromString,
                     response_serializer=database__pb2.BaseResponse.SerializeToString,
             ),
             'ModifyUserInfo': grpc.unary_unary_rpc_method_handler(
@@ -159,6 +175,23 @@ class DataBase(object):
             metadata=None):
         return grpc.experimental.unary_unary(request, target, '/DataBase/ModifyUserPassword',
             database__pb2.RequestModifyUserPassword.SerializeToString,
+            database__pb2.BaseResponse.FromString,
+            options, channel_credentials,
+            insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
+
+    @staticmethod
+    def ModifyUserRole(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(request, target, '/DataBase/ModifyUserRole',
+            database__pb2.RequestModifyUserRole.SerializeToString,
             database__pb2.BaseResponse.FromString,
             options, channel_credentials,
             insecure, call_credentials, compression, wait_for_ready, timeout, metadata)
