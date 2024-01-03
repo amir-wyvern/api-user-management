@@ -80,6 +80,11 @@ class UserUpdatePassword(BaseModel):
     username : str
     new_password: str
     
+class UserUpdateRole(BaseModel):
+
+    username : str
+    new_role: UserRole
+    
 class UserUpdateInfo(BaseModel):
 
     username : str
