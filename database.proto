@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+service DataBase {
+  rpc GetUser(RequestUserInfo) returns (ResponseUserInfo) {}
+  rpc NewUser(RequestNewUser) returns (BaseResponse) {}
+  rpc ModifyUserPassword(RequestModifyUserPassword) returns (BaseResponse) {}
+  rpc ModifyUserInfo(RequestModifyUserInfo) returns (BaseResponse) {}
+  rpc DeleteUser(RequestDeleteUser) returns (BaseResponse) {}
+}
+
+enum UserRole {
+    ADMIN = 0;
+    USER = 1;
+}
+
+message RequestNewUser {
+    string name = 1;
+    string username = 2;
+    string password = 3;
+    string phone_number = 4;
+    optional string email = 5;
+    UserRole role = 6;
+}
+
+message RequestModifyUserPassword {
+    string username = 1;
+    string password = 2;
+}
+
+message RequestModifyUserInfo {
+    string username = 1;
+    optional string name = 2;
+    optional string email = 3;
+    optional string phone_number = 4;
+}
+
+message RequestDeleteUser {
+    string username = 1;
+}
+
+message RequestUserInfo {
+    string username = 1;
+}
+
+message BaseResponse {
+    string message = 1;
+    int32 code = 2;
+}
+
+message UserInfo {
+    string username = 1;
+    string name = 2;
+    optional string email = 3;
+    string phone_number = 4;
+    UserRole role = 5;
+}
+
+message ResponseUserInfo {
+    string message = 1;
+    int32 code = 2;
+    optional UserInfo data = 3;
+}
+
+
