@@ -22,13 +22,19 @@ router = APIRouter(prefix='/user', tags=['User'])
 def create_new_user(username: str, stub: DataBaseStub = Depends(get_grpc)):
 
     data = {
-            'name': 'test',
-            'username': 'test',
-            'email': 'test',
-            'phone_number': 'test',
-            'role': 'admin'
-        }
-    return UserInfoResponse(**data)
+        'username': username
+    }
+
+    resp = stub.GetUser(pb2.RequestGetUser(**data))
+
+    resp_user = {
+        'username': resp.username,
+        'name': resp.name,
+        'email': resp.email,
+        'phone_number': resp.phone_number, 
+        'role': resp.role
+    }
+    return UserInfoResponse(**resp_user)
 
 @router.post('/new', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
 def create_new_user(request: UserRegister, stub: DataBaseStub = Depends(get_grpc)):
