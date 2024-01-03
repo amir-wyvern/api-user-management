@@ -4,6 +4,7 @@ service DataBase {
   rpc GetUser(RequestUserInfo) returns (ResponseUserInfo) {}
   rpc NewUser(RequestNewUser) returns (BaseResponse) {}
   rpc ModifyUserPassword(RequestModifyUserPassword) returns (BaseResponse) {}
+  rpc ModifyUserRole(RequestModifyUserRole) returns (BaseResponse) {}
   rpc ModifyUserInfo(RequestModifyUserInfo) returns (BaseResponse) {}
   rpc DeleteUser(RequestDeleteUser) returns (BaseResponse) {}
 }
@@ -25,6 +26,11 @@ message RequestNewUser {
 message RequestModifyUserPassword {
     string username = 1;
     string password = 2;
+}
+
+message RequestModifyUserRole {
+    string username = 1;
+    UserRole role = 2;
 }
 
 message RequestModifyUserInfo {
