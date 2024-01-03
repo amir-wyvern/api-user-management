@@ -60,6 +60,7 @@ class UserInfoResponse(BaseModel):
     name: str 
     email:  EmailStr
     phone_number: PhoneNumberStr
+    role: UserRole
 
     class Config:
         from_attributes = True
