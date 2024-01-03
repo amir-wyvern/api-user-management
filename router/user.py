@@ -1,6 +1,8 @@
 from fastapi import (
     APIRouter,
-    Depends
+    Depends,
+    HTTPException,
+    status
 )
 from schemas import (
     BaseResponse,
@@ -26,6 +28,9 @@ def create_new_user(username: str, stub: DataBaseStub = Depends(get_grpc)):
     }
 
     resp = stub.GetUser(pb2.RequestGetUser(**data))
+    
+    if resp.code != 1200:
+        return HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': resp.message, 'internal_code': resp.code})
 
     resp_user = {
         'username': resp.username,
@@ -35,6 +40,7 @@ def create_new_user(username: str, stub: DataBaseStub = Depends(get_grpc)):
         'role': resp.role
     }
     return UserInfoResponse(**resp_user)
+
 
 @router.post('/new', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
 def create_new_user(request: UserRegister, stub: DataBaseStub = Depends(get_grpc)):
@@ -48,9 +54,13 @@ def create_new_user(request: UserRegister, stub: DataBaseStub = Depends(get_grpc
         'role': request.role
     }
     
-    stub.NewUser(pb2.RequestNewUser(**data))
-    
+    resp = stub.NewUser(pb2.RequestNewUser(**data))
+
+    if resp.code != 1200:
+        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+
     return BaseResponse(message= 'message test', code= 1200)
+
 
 @router.put('/info/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
 def edit_user_information(request: UserUpdateInfo, stub: DataBaseStub = Depends(get_grpc)):
@@ -62,9 +72,12 @@ def edit_user_information(request: UserUpdateInfo, stub: DataBaseStub = Depends(
         'phone_number': request.new_phone_number
     }
 
-    stub.ModifyUserInfo(pb2.RequestModifyUserInfo(**data))
+    resp = stub.ModifyUserInfo(pb2.RequestModifyUserInfo(**data))
+    if resp.code != 1200:
+        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
     return BaseResponse(message= 'message test', code= 1200) 
+
 
 @router.put('/pass/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
 def change_user_password(request: UserUpdatePassword, stub: DataBaseStub = Depends(get_grpc)):
@@ -74,7 +87,10 @@ def change_user_password(request: UserUpdatePassword, stub: DataBaseStub = Depen
         'password': request.new_password
     }
     
-    stub.ModifyUserPassword(pb2.RequestModifyUserPassword(**data))
+    resp = stub.ModifyUserPassword(pb2.RequestModifyUserPassword(**data))
+    if resp.code != 1200:
+        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+
     return BaseResponse(message= 'message test', code= 1200)
 
 @router.put('/role/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
@@ -85,8 +101,12 @@ def change_user_role(request: UserUpdateRole, stub: DataBaseStub = Depends(get_g
         'role': request.new_role
     }
 
-    stub.ModifyUserRole(pb2.RequestModifyUserRole(**data))
+    resp = stub.ModifyUserRole(pb2.RequestModifyUserRole(**data))
+    if resp.code != 1200:
+        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+
     return BaseResponse(message= 'message test', code= 1200)
+
 
 @router.delete('/delete', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
 def delete_user(request: UserDelete, stub: DataBaseStub = Depends(get_grpc)):
@@ -95,6 +115,9 @@ def delete_user(request: UserDelete, stub: DataBaseStub = Depends(get_grpc)):
         'username': request.username
     }
 
-    stub.DeleteUser(pb2.RequestDeleteUser(**data))
+    resp = stub.DeleteUser(pb2.RequestDeleteUser(**data))
+    if resp.code != 1200:
+        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+
     return BaseResponse(message= 'message test', code= 1200)
 
