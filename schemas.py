@@ -50,8 +50,8 @@ class UserAuthResponse(BaseModel):
 
 class UserRole(str ,Enum):
 
-    ADMIN = 'admin'
-    USER = 'user'
+    ADMIN = 'ADMIN'
+    USER = 'USER'
 
     
 class UserInfoResponse(BaseModel):
