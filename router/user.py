@@ -4,21 +4,37 @@ from fastapi import (
 from schemas import (
     BaseResponse,
     UserRegister,
-    HTTPError
+    HTTPError,
+    UserUpdateInfo,
+    UserInfoResponse
 )
 import grpc
 import grpc_utils.database_pb2_grpc as pb2_grpc
 import grpc_utils.database_pb2 as pb2
+import os 
 
-chanel = grpc.insecure_channel('localhost:3333')
+PORT = os.getenv("GRPC_PORT")
+HOST = os.getenv("GRPC_HOST")
+
+chanel = grpc.insecure_channel(f'{HOST}:{PORT}')
 stub = pb2_grpc.DataBaseStub(chanel)
-
 
 router = APIRouter(prefix='/user', tags=['User'])
 
+@router.get('/info', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
+def create_new_user(username: str):
+
+    data = {
+            'name': 'test',
+            'username': 'test',
+            'email': 'test',
+            'phone_number': 'test',
+            'role': 'admin'
+        }
+    return UserInfoResponse(**data)
+
 @router.post('/new', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
 def create_new_user(request: UserRegister):
-    print(request)
 
     data = {
         'name': request.name,
@@ -28,7 +44,25 @@ def create_new_user(request: UserRegister):
         'phone_number': request.phone_number,
         'role': request.role
     }
-    x = pb2.RequestNewUSer(**data)
-    resp = stub.NewUser(x )
-    return BaseResponse(message= resp.message)
+    return BaseResponse(message= 'message test', code= 1200)
+
+@router.put('/info/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
+def create_new_user(request: UserUpdateInfo):
+
+    return BaseResponse(message= 'message test', code= 1200)
+
+@router.put('/pass/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
+def create_new_user(request: UserUpdateInfo):
+
+    return BaseResponse(message= 'message test', code= 1200)
+
+@router.put('/role/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
+def create_new_user(request: UserUpdateInfo):
+
+    return BaseResponse(message= 'message test', code= 1200)
+
+@router.delete('/delete', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
+def create_new_user(request: UserUpdateInfo):
+
+    return BaseResponse(message= 'message test', code= 1200)
 
