@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
+from typing import Optional, List
 from enum import Enum
 import re
 
@@ -36,15 +36,6 @@ class HTTPError(BaseModel):
             "example": {"detail": "HTTPException raised.", 'internal_code':1001},
         }
         
-
-# ========== Auth ========== 
-
-
-class UserAuthResponse(BaseModel):
-
-    access_token: str
-    type_token: str
-
 
 # ========== User ========== 
 
@@ -97,3 +88,27 @@ class UserDelete(BaseModel):
 
     username : str
 
+
+# ========== Auth ========== 
+
+
+class UserAuthResponse(BaseModel):
+
+    access_token: str
+    type_token: str
+
+
+class Token(BaseModel):
+    
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    user_id: int | None = None
+    role: UserRole | None = None
+    scopes: List[str] = []
+
+class TokenUser(BaseModel):
+
+    user_id: int
+    role: UserRole
