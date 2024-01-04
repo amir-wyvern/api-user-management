@@ -1,12 +1,16 @@
 from typing import Annotated
 from fastapi import Depends, HTTPException, status, APIRouter
 from fastapi.security import OAuth2PasswordRequestForm
-from schemas import Token, HTTPError
+from grpc_utils.database_pb2_grpc import DataBaseStub
 from auth.auth import verify_password, create_access_token
 from database_service.session import get_grpc
-from grpc_utils.database_pb2_grpc import DataBaseStub
+from cache.session import get_redis_cache
 import grpc_utils.database_pb2 as pb2
+from schemas import Token, HTTPError
+from redis import Redis
+from cache.functions import set_token
 import logging
+
 
 # Create a file handler to save logs to a file
 logger = logging.getLogger('auth_router.log') 
@@ -27,7 +31,7 @@ logger.addHandler(console_handler)
 router = APIRouter(prefix='/auth', tags=['Auth'])
 
 @router.post("/login", response_model=Token, responses= {401:{'model':HTTPError}, 500:{'model':HTTPError}})
-async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], stub: DataBaseStub= Depends(get_grpc)):
+async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], stub: DataBaseStub= Depends(get_grpc), cache_db: Redis= Depends(get_redis_cache)):
     
     if form_data.scopes and 'admin' in form_data.scopes :
         scopes = ['admin', 'user']
@@ -63,6 +67,8 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         data={"user": resp_user.data.user_id, 'role': resp_user.data.role, "scopes": scopes}
     )
 
+    set_token(resp_user.data.user_id, access_token, cache_db)
+    
     return {"access_token": access_token, "token_type": "bearer"}
 
 
