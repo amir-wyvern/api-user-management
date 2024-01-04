@@ -30,7 +30,7 @@ def create_new_user(username: str, stub: DataBaseStub = Depends(get_grpc)):
     resp = stub.GetUser(pb2.RequestGetUser(**data))
     
     if resp.code != 1200:
-        return HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': resp.message, 'internal_code': resp.code})
+        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': resp.message, 'internal_code': resp.code})
 
     resp_user = {
         'username': resp.username,
@@ -57,7 +57,7 @@ def create_new_user(request: UserRegister, stub: DataBaseStub = Depends(get_grpc
     resp = stub.NewUser(pb2.RequestNewUser(**data))
 
     if resp.code != 1200:
-        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+        raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
     return BaseResponse(message= 'message test', code= 1200)
 
@@ -74,7 +74,7 @@ def edit_user_information(request: UserUpdateInfo, stub: DataBaseStub = Depends(
 
     resp = stub.ModifyUserInfo(pb2.RequestModifyUserInfo(**data))
     if resp.code != 1200:
-        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+        raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
     return BaseResponse(message= 'message test', code= 1200) 
 
@@ -89,7 +89,7 @@ def change_user_password(request: UserUpdatePassword, stub: DataBaseStub = Depen
     
     resp = stub.ModifyUserPassword(pb2.RequestModifyUserPassword(**data))
     if resp.code != 1200:
-        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+        raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
     return BaseResponse(message= 'message test', code= 1200)
 
@@ -103,7 +103,7 @@ def change_user_role(request: UserUpdateRole, stub: DataBaseStub = Depends(get_g
 
     resp = stub.ModifyUserRole(pb2.RequestModifyUserRole(**data))
     if resp.code != 1200:
-        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+        raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
     return BaseResponse(message= 'message test', code= 1200)
 
@@ -117,7 +117,7 @@ def delete_user(request: UserDelete, stub: DataBaseStub = Depends(get_grpc)):
 
     resp = stub.DeleteUser(pb2.RequestDeleteUser(**data))
     if resp.code != 1200:
-        return HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
+        raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
     return BaseResponse(message= 'message test', code= 1200)
 
