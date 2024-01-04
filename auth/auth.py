@@ -14,7 +14,9 @@ from fastapi import (
 ) 
 import os
 from schemas import TokenData
-
+from redis import Redis
+from cache.session import get_redis_cache
+from cache.functions import get_token
 
 OAUTH2_SECRET_KEY = os.getenv('OAUTH2_SECRET_KEY')
 OAUTH2_ALGORITHM = os.getenv('OAUTH2_ALGORITHM')
@@ -36,7 +38,7 @@ def create_access_token(data: dict):
     return encoded_jwt
 
 
-async def get_current_user(security_scopes: SecurityScopes, token: Annotated[str, Depends(oauth2_scheme)]):
+async def get_current_user(security_scopes: SecurityScopes, token: Annotated[str, Depends(oauth2_scheme)], cache_db: Redis= Depends(get_redis_cache) ):
     
     if security_scopes.scopes:
         authenticate_value = f'Bearer scope="{security_scopes.scope_str}"'
@@ -53,15 +55,28 @@ async def get_current_user(security_scopes: SecurityScopes, token: Annotated[str
     try:
         payload = jwt.decode(token, OAUTH2_SECRET_KEY, algorithms=[OAUTH2_ALGORITHM])
         user_id: str = payload.get("user")
+
         if user_id is None:
             raise credentials_exception
         
+        token = get_token(user_id, cache_db)
+
+        if token is None:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token is expired",
+                headers={"WWW-Authenticate": authenticate_value},
+            )
+
         token_scopes = payload.get("scopes", [])
         role = payload.get("role", None)
         token_data = TokenData(scopes=token_scopes, user_id=user_id, role=role)
     
     except (JWTError, ValidationError):
         raise credentials_exception
+
+    except HTTPException as e:
+        raise e
 
     for scope in security_scopes.scopes:
         if scope not in token_data.scopes:
@@ -70,6 +85,7 @@ async def get_current_user(security_scopes: SecurityScopes, token: Annotated[str
                 detail="Not enough permissions",
                 headers={"WWW-Authenticate": authenticate_value},
             )
+        
     return TokenUser(user_id=user_id, role=role)
 
 
