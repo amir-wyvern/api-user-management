@@ -30,10 +30,10 @@ router = APIRouter(prefix='/auth', tags=['Auth'])
 async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], stub: DataBaseStub= Depends(get_grpc)):
     
     if form_data.scopes and 'admin' in form_data.scopes :
-        scope = 'admin'
+        scopes = ['admin', 'user']
 
     elif form_data.scopes and 'user' in form_data.scopes:
-        scope = 'user'
+        scopes = ['user']
 
     else : 
         raise HTTPException(
@@ -51,7 +51,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         logger.error(f'[login] error in grpc connection (user:{form_data.username} -error: {e})')
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='check the logs for more info')
     
-    if resp_user.data.role.lower() == scope:
+    if resp_user.data.role.lower() in scopes:
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail='Incorrect username or password')
     
     check_password = verify_password(resp_user.data.password, form_data.password )
@@ -60,7 +60,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Incorrect username or password")
     
     access_token = create_access_token(
-        data={"user": resp_user.data.user_id, 'role': resp_user.data.role, "scopes": scope},
+        data={"user": resp_user.data.user_id, 'role': resp_user.data.role, "scopes": scopes}
     )
 
     return {"access_token": access_token, "token_type": "bearer"}
