@@ -17,6 +17,7 @@ from schemas import (
 from database_service.session import get_grpc
 from grpc_utils.database_pb2_grpc import DataBaseStub
 import grpc_utils.database_pb2 as pb2
+from grpc._channel import _InactiveRpcError
 
 router = APIRouter(prefix='/user', tags=['User'])
 
@@ -26,9 +27,17 @@ def create_new_user(username: str, stub: DataBaseStub = Depends(get_grpc)):
     data = {
         'username': username
     }
-
-    resp = stub.GetUser(pb2.RequestGetUser(**data))
     
+    try:
+
+        resp = stub.GetUser(pb2.RequestGetUser(**data))
+
+    except _InactiveRpcError as InactiveRpcError:
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
+
+    except Exception as e :
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
+
     if resp.code != 1200:
         raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': resp.message, 'internal_code': resp.code})
 
@@ -54,7 +63,16 @@ def create_new_user(request: UserRegister, stub: DataBaseStub = Depends(get_grpc
         'role': request.role
     }
     
-    resp = stub.NewUser(pb2.RequestNewUser(**data))
+    try:
+
+        resp = stub.NewUser(pb2.RequestNewUser(**data))
+
+    except _InactiveRpcError as InactiveRpcError:
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
+    
+    except Exception as e :
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
+
 
     if resp.code != 1200:
         raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
@@ -72,7 +90,16 @@ def edit_user_information(request: UserUpdateInfo, stub: DataBaseStub = Depends(
         'phone_number': request.new_phone_number
     }
 
-    resp = stub.ModifyUserInfo(pb2.RequestModifyUserInfo(**data))
+    try:
+
+        resp = stub.ModifyUserInfo(pb2.RequestModifyUserInfo(**data))
+
+    except _InactiveRpcError as InactiveRpcError:
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
+
+    except Exception as e :
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
+
     if resp.code != 1200:
         raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
@@ -87,7 +114,16 @@ def change_user_password(request: UserUpdatePassword, stub: DataBaseStub = Depen
         'password': request.new_password
     }
     
-    resp = stub.ModifyUserPassword(pb2.RequestModifyUserPassword(**data))
+    try:
+
+        resp = stub.ModifyUserPassword(pb2.RequestModifyUserPassword(**data))
+
+    except _InactiveRpcError as InactiveRpcError:
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
+
+    except Exception as e :
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
+
     if resp.code != 1200:
         raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
@@ -101,7 +137,17 @@ def change_user_role(request: UserUpdateRole, stub: DataBaseStub = Depends(get_g
         'role': request.new_role
     }
 
-    resp = stub.ModifyUserRole(pb2.RequestModifyUserRole(**data))
+    try:
+
+        resp = stub.ModifyUserRole(pb2.RequestModifyUserRole(**data))
+    
+    except _InactiveRpcError as InactiveRpcError:
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
+
+    except Exception as e :
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
+
+
     if resp.code != 1200:
         raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
@@ -115,7 +161,16 @@ def delete_user(request: UserDelete, stub: DataBaseStub = Depends(get_grpc)):
         'username': request.username
     }
 
-    resp = stub.DeleteUser(pb2.RequestDeleteUser(**data))
+    try:
+
+        resp = stub.DeleteUser(pb2.RequestDeleteUser(**data))
+
+    except _InactiveRpcError as InactiveRpcError:
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
+
+    except Exception as e :
+        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
+
     if resp.code != 1200:
         raise HTTPException(status_code= status.HTTP_403_FORBIDDEN, detail={'message': resp.message, 'internal_code': resp.code})
 
