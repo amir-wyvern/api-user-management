@@ -12,14 +12,15 @@ from schemas import (
     UserUpdatePassword,
     UserInfoResponse,
     UserUpdateRole,
-    UserDelete
+    UserDelete,
+    TokenUser
 )
 from database_service.session import get_grpc
 from grpc_utils.database_pb2_grpc import DataBaseStub
 import grpc_utils.database_pb2 as pb2
 from grpc._channel import _InactiveRpcError
 import logging
-
+from auth.auth import get_normal_user, get_current_user
 
 # Create a file handler to save logs to a file
 logger = logging.getLogger('user_router.log') 
@@ -41,7 +42,7 @@ logger.addHandler(console_handler)
 router = APIRouter(prefix='/user', tags=['User'])
 
 @router.get('/info', response_model= UserInfoResponse, responses= {404:{'model':HTTPError}, 500:{'model':HTTPError}} )
-def get_user_information(username: str, stub: DataBaseStub = Depends(get_grpc)):
+def get_user_information(username: str, current_user: TokenUser= Depends(get_normal_user), stub: DataBaseStub = Depends(get_grpc)):
 
     logger.debug(f'[info] Receive a get_user_informaion request [username: {username}]')
 
@@ -80,7 +81,7 @@ def get_user_information(username: str, stub: DataBaseStub = Depends(get_grpc)):
 
 
 @router.post('/new', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 409:{'model':HTTPError}} )
-def create_new_user(request: UserRegister, stub: DataBaseStub = Depends(get_grpc)):
+def create_new_user(request: UserRegister, current_user: TokenUser= Depends(get_current_user), stub: DataBaseStub = Depends(get_grpc)):
 
     logger.debug(f'[new] Receive a create_new_user request [username: {request.username}]')
 
@@ -117,7 +118,7 @@ def create_new_user(request: UserRegister, stub: DataBaseStub = Depends(get_grpc
 
 
 @router.put('/info/edit', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 400:{'model':HTTPError}} )
-def edit_user_information(request: UserUpdateInfo, stub: DataBaseStub = Depends(get_grpc)):
+def edit_user_information(request: UserUpdateInfo, current_user: TokenUser= Depends(get_normal_user), stub: DataBaseStub = Depends(get_grpc)):
 
     logger.debug(f'[new] Receive a edit_user_information request [username: {request.username}]')
 
@@ -152,7 +153,7 @@ def edit_user_information(request: UserUpdateInfo, stub: DataBaseStub = Depends(
 
 
 @router.put('/pass/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
-def change_user_password(request: UserUpdatePassword, stub: DataBaseStub = Depends(get_grpc)):
+def change_user_password(request: UserUpdatePassword, current_user: TokenUser= Depends(get_normal_user), stub: DataBaseStub = Depends(get_grpc)):
 
     data = {
         'username': request.username,
@@ -182,7 +183,7 @@ def change_user_password(request: UserUpdatePassword, stub: DataBaseStub = Depen
     return BaseResponse(message= 'message test', code= 1200)
 
 @router.put('/role/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
-def change_user_role(request: UserUpdateRole, stub: DataBaseStub = Depends(get_grpc)):
+def change_user_role(request: UserUpdateRole, current_user: TokenUser= Depends(get_current_user), stub: DataBaseStub = Depends(get_grpc)):
 
     data = {
         'username': request.username,
@@ -213,7 +214,7 @@ def change_user_role(request: UserUpdateRole, stub: DataBaseStub = Depends(get_g
 
 
 @router.delete('/delete', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
-def delete_user(request: UserDelete, stub: DataBaseStub = Depends(get_grpc)):
+def delete_user(request: UserDelete, current_user: TokenUser= Depends(get_current_user), stub: DataBaseStub = Depends(get_grpc)):
     
     data = {
         'username': request.username
