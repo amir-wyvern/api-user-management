@@ -54,11 +54,11 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         resp_user = stub.GetUser(pb2.RequestUserInfo(**{'username': form_data.username}))
 
     except _InactiveRpcError as InactiveRpcError:
-        logger.error(f"[login] API-service can't connect to grpc host (user:{form_data.username} -error: {InactiveRpcError})")
+        logger.error(f"[login] API-service can't connect to grpc host [user:{form_data.username} -error: {InactiveRpcError}]")
         raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
 
     except Exception as e :
-        logger.error(f'[login] Error in grpc connection (user:{form_data.username} -error: {e})')
+        logger.error(f'[login] Error in grpc connection [user:{form_data.username} -error: {e}]')
         raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
 
     if resp_user.code != 1200:
