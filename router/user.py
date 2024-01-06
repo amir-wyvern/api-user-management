@@ -1,3 +1,14 @@
+from grpc_utils.database_pb2_grpc import DataBaseStub
+from auth.auth import get_normal_user, get_admin_user
+from database_service.session import get_grpc
+from database_service.functions import (
+    get_user,
+    create_user,
+    edit_user_info,
+    edit_user_password,
+    delete_user_target,
+    edit_user_role
+)
 from fastapi import (
     APIRouter,
     Depends,
@@ -15,12 +26,7 @@ from schemas import (
     UserDelete,
     TokenUser
 )
-from database_service.session import get_grpc
-from grpc_utils.database_pb2_grpc import DataBaseStub
-import grpc_utils.database_pb2 as pb2
-from grpc._channel import _InactiveRpcError
 import logging
-from auth.auth import get_normal_user, get_current_user
 
 # Create a file handler to save logs to a file
 logger = logging.getLogger('user_router.log') 
@@ -42,202 +48,120 @@ logger.addHandler(console_handler)
 router = APIRouter(prefix='/user', tags=['User'])
 
 @router.get('/info', response_model= UserInfoResponse, responses= {404:{'model':HTTPError}, 500:{'model':HTTPError}} )
-def get_user_information(username: str, current_user: TokenUser= Depends(get_normal_user), stub: DataBaseStub = Depends(get_grpc)):
+def get_user_information(current_user: TokenUser= Depends(get_normal_user), stub: DataBaseStub = Depends(get_grpc)):
 
-    logger.debug(f'[info] Receive a get_user_informaion request [username: {username}]')
+    logger.debug(f'[info] Receive a get_user_informaion request [username: {current_user.username}]')
 
-    data = {
-        'username': username
-    }
+    resp ,err = get_user(current_user.username, current_user.username, stub, logger, 'info')
+    if err:
+        raise err
     
-    try:
-
-        resp = stub.GetUser(pb2.RequestGetUser(**data))
-
-    except _InactiveRpcError as InactiveRpcError:
-        logger.error(f"[info] API-service can't connect to grpc host [user:{username} -error: {InactiveRpcError}]")
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
-
-    except Exception as e :
-        logger.error(f'[info] Error in grpc connection [user:{username} -error: {e}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
-
-    if resp.code == 1401:
-        logger.debug(f'[info] Username is not found [username: {username}]')
-        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': 'Username is not found', 'code': 2401})
-
-    elif resp.code != 1200:
-        logger.debug(f'[info] error in database service [username: {username} -err_msg: {resp.message} -err_code: {resp.code}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'message': 'Contact to support!', 'code': resp.code})
-
-    resp_user = {
-        'username': resp.username,
-        'name': resp.name,
-        'email': resp.email,
-        'phone_number': resp.phone_number, 
-        'role': resp.role
-    }
-    return UserInfoResponse(**resp_user)
+    return UserInfoResponse(**resp)
 
 
 @router.post('/new', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 409:{'model':HTTPError}} )
-def create_new_user(request: UserRegister, current_user: TokenUser= Depends(get_current_user), stub: DataBaseStub = Depends(get_grpc)):
+def create_new_user(request: UserRegister, current_user: TokenUser= Depends(get_admin_user), stub: DataBaseStub = Depends(get_grpc)):
 
-    logger.debug(f'[new] Receive a create_new_user request [username: {request.username}]')
+    logger.debug(f'[new] Receive a create_new_user request [caller: {current_user.username} -new_username: {request.username}]')
 
-    data = {
-        'name': request.name,
+    resp, _ = get_user(current_user.username, request.username, stub, logger, 'new')
+    if resp:
+        raise HTTPException(status_code= status.HTTP_409_CONFLICT, detail={'message': 'Username already exists', 'code': 2403})
+
+    user_data = {
         'username': request.username,
         'password': request.password,
+        'name': request.name,
         'email': request.email,
         'phone_number': request.phone_number,
         'role': request.role
     }
-    
-    try:
 
-        resp = stub.NewUser(pb2.RequestNewUser(**data))
+    resp ,err = create_user(current_user.username, user_data, stub, logger)
+    if err:
+        raise err
 
-    except _InactiveRpcError as InactiveRpcError:
-        logger.error(f"[new] API-service can't connect to grpc host [user:{request.username} -error: {InactiveRpcError}]")
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
-
-    except Exception as e :
-        logger.error(f'[new] Error in grpc connection [user:{request.username} -error: {e}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
-
-    if resp.code == 1403:
-        logger.debug(f'[new] Username already exists [username: {request.username}]')
-        raise HTTPException(status_code= status.HTTP_409_CONFLICT, detail={'message': 'Username already exists', 'code': 2403})
-
-    if resp.code != 1200:
-        logger.debug(f'[new] error in database service [username: {request.username} -err_msg: {resp.message} -err_code: {resp.code}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'message': 'Contact to support!', 'code': resp.code})
-
-    return BaseResponse(message= 'message test', code= 1200)
+    return BaseResponse(**resp)
 
 
-@router.put('/info/edit', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 400:{'model':HTTPError}} )
+@router.put('/info/edit', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 404:{'model':HTTPError}} )
 def edit_user_information(request: UserUpdateInfo, current_user: TokenUser= Depends(get_normal_user), stub: DataBaseStub = Depends(get_grpc)):
 
-    logger.debug(f'[new] Receive a edit_user_information request [username: {request.username}]')
+    logger.debug(f'[edit info] Receive a edit_user_information request [username: {current_user.username}]')
 
-    data = {
-        'username': request.username,
+    _, err = get_user(current_user.username, current_user.username, stub, logger, 'edit info')
+    if err:
+        raise err
+    
+    new_user_data = {
         'name': request.new_name,
         'email': request.new_email,
         'phone_number': request.new_phone_number
     }
 
-    try:
+    resp, err = edit_user_info(current_user.username, new_user_data, stub, logger)
+    if err:
+        raise err
 
-        resp = stub.ModifyUserInfo(pb2.RequestModifyUserInfo(**data))
-
-    except _InactiveRpcError as InactiveRpcError:
-        logger.error(f"[edit info] API-service can't connect to grpc host [user:{request.username} -error: {InactiveRpcError}]")
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
-
-    except Exception as e :
-        logger.error(f'[edit info] Error in grpc connection [user:{request.username} -error: {e}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
-    
-    if resp.code == 1401:
-        logger.debug(f'[edit info] Username is not found [username: {request.username}]')
-        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': 'Username is not found', 'code': 2401})
-
-    if resp.code != 1200:
-        logger.debug(f'[edit info] error in database service [username: {request.username} -err_msg: {resp.message} -err_code: {resp.code}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'message': 'Contact to support!', 'code': resp.code})
-
-    return BaseResponse(message= 'message test', code= 1200) 
+    return BaseResponse(**resp)
 
 
-@router.put('/pass/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
+@router.put('/pass/edit', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 404:{'model':HTTPError}} )
 def change_user_password(request: UserUpdatePassword, current_user: TokenUser= Depends(get_normal_user), stub: DataBaseStub = Depends(get_grpc)):
 
-    data = {
-        'username': request.username,
+    logger.debug(f'[edit pass] Receive a edit_user_password request [username: {current_user.username}]')
+
+    _, err = get_user(current_user.username, current_user.username, stub, logger, 'edit password')
+    if err:
+        raise err
+
+    new_password = {
         'password': request.new_password
     }
     
-    try:
+    resp, err = edit_user_password(current_user.username, new_password, stub, logger)
+    if err:
+        raise err
+    
+    return BaseResponse(**resp)
 
-        resp = stub.ModifyUserPassword(pb2.RequestModifyUserPassword(**data))
+@router.put('/role/edit', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 404:{'model':HTTPError}} )
+def change_user_role(request: UserUpdateRole, current_user: TokenUser= Depends(get_admin_user), stub: DataBaseStub = Depends(get_grpc)):
 
-    except _InactiveRpcError as InactiveRpcError:
-        logger.error(f"[edit pass] API-service can't connect to grpc host [user:{request.username} -error: {InactiveRpcError}]")
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
+    logger.debug(f'[edit role] Receive a change_user_role request [caller: {current_user.username} -edit_username: {request.username} ]')
 
-    except Exception as e :
-        logger.error(f'[edit pass] Error in grpc connection [user:{request.username} -error: {e}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
-
-    if resp.code == 1401:
-        logger.debug(f'[edit pass] Username is not found [username: {request.username}]')
-        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': 'Username is not found', 'code': 2401})
-
-    if resp.code != 1200:
-        logger.debug(f'[edit pass] error in database service [username: {request.username} -err_msg: {resp.message} -err_code: {resp.code}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'message': 'Contact to support!', 'code': resp.code})
-
-    return BaseResponse(message= 'message test', code= 1200)
-
-@router.put('/role/edit', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
-def change_user_role(request: UserUpdateRole, current_user: TokenUser= Depends(get_current_user), stub: DataBaseStub = Depends(get_grpc)):
-
-    data = {
+    _, err = get_user(current_user.username, request.username, stub, logger, 'edit password')
+    if err:
+        raise err
+    
+    new_role_data = {
         'username': request.username,
         'role': request.new_role
     }
 
-    try:
-
-        resp = stub.ModifyUserRole(pb2.RequestModifyUserRole(**data))
+    resp, err = edit_user_role(current_user.username, new_role_data, stub, logger)
+    if err:
+        raise err
     
-    except _InactiveRpcError as InactiveRpcError:
-        logger.error(f"[edit role] API-service can't connect to grpc host [user:{request.username} -error: {InactiveRpcError}]")
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
-
-    except Exception as e :
-        logger.error(f'[edit role] Error in grpc connection [user:{request.username} -error: {e}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
-
-    if resp.code == 1401:
-        logger.debug(f'[edit role] Username is not found [username: {request.username}]')
-        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': 'Username is not found', 'code': 2401})
-
-    if resp.code != 1200:
-        logger.debug(f'[edit role] error in database service [username: {request.username} -err_msg: {resp.message} -err_code: {resp.code}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'message': 'Contact to support!', 'code': resp.code})
-
-    return BaseResponse(message= 'message test', code= 1200)
+    return BaseResponse(**resp)
 
 
-@router.delete('/delete', response_model= BaseResponse, responses= {404:{'model':HTTPError}, 403:{'model':HTTPError}} )
-def delete_user(request: UserDelete, current_user: TokenUser= Depends(get_current_user), stub: DataBaseStub = Depends(get_grpc)):
+
+@router.delete('/delete', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 404:{'model':HTTPError}} )
+def delete_user(request: UserDelete, current_user: TokenUser= Depends(get_admin_user), stub: DataBaseStub = Depends(get_grpc)):
     
-    data = {
+    logger.debug(f'[delete] Receive a delete_user request [caller: {current_user.username} -delete_username: {request.username} ]')
+
+    _, err = get_user(current_user.username, request.username, stub, logger, 'edit password')
+    if err:
+        raise err
+    
+    user_data = {
         'username': request.username
     }
 
-    try:
-
-        resp = stub.DeleteUser(pb2.RequestDeleteUser(**data))
-
-    except _InactiveRpcError as InactiveRpcError:
-        logger.error(f"[delete] API-service can't connect to grpc host [user:{request.username} -error: {InactiveRpcError}]")
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
-
-    except Exception as e :
-        logger.error(f'[delete] Error in grpc connection [user:{request.username} -error: {e}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
-
-    if resp.code == 1401:
-        logger.debug(f'[delete] Username is not found [username: {request.username}]')
-        raise HTTPException(status_code= status.HTTP_404_NOT_FOUND, detail={'message': 'Username is not found', 'code': 2401})
-
-    if resp.code != 1200:
-        logger.debug(f'[delete] error in database service [username: {request.username} -err_msg: {resp.message} -err_code: {resp.code}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'message': 'Contact to support!', 'code': resp.code})
-
-    return BaseResponse(message= 'message test', code= 1200)
+    resp, err = delete_user_target(current_user.username, user_data, stub, logger)
+    if err:
+        raise err
+    
+    return BaseResponse(**resp)
