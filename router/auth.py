@@ -9,8 +9,8 @@ import grpc_utils.database_pb2 as pb2
 from schemas import Token, HTTPError
 from redis import Redis
 from cache.functions import set_token
-import logging
 from grpc._channel import _InactiveRpcError
+import logging
 
 # Create a file handler to save logs to a file
 logger = logging.getLogger('auth_router.log') 
@@ -76,12 +76,10 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= {'code': 2403, 'message': "Incorrect username or password"})
     
     access_token = create_access_token(
-        data={"user": resp_user.data.user_id, 'role': resp_user.data.role, "scopes": scopes}
+        data={"user_id": resp_user.data.user_id, 'username': resp_user.data.username, 'role': resp_user.data.role, "scopes": scopes}
     )
 
     set_token(resp_user.data.user_id, access_token, cache_db)
     
     return {"access_token": access_token, "token_type": "bearer"}
-
-
 
