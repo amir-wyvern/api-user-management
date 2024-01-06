@@ -29,11 +29,11 @@ class BaseResponse(BaseModel):
 class HTTPError(BaseModel):
 
     message: str 
-    internal_code: str
+    code: str
 
     class Config:
         json_schema_extra = {
-            "example": {"detail": "HTTPException raised.", 'internal_code':1001},
+            "example": {"detail": "HTTPException raised.", 'code':1001},
         }
         
 
@@ -68,7 +68,6 @@ class UserRegister(BaseModel):
 
 class UserUpdatePassword(BaseModel):
 
-    username : str
     new_password: str
     
 class UserUpdateRole(BaseModel):
@@ -78,7 +77,6 @@ class UserUpdateRole(BaseModel):
     
 class UserUpdateInfo(BaseModel):
 
-    username : str
     new_email: Optional[EmailStr]
     new_phone_number: Optional[PhoneNumberStr] 
     new_name: Optional[str] 
@@ -111,4 +109,5 @@ class TokenData(BaseModel):
 class TokenUser(BaseModel):
 
     user_id: int
+    username: str
     role: UserRole
