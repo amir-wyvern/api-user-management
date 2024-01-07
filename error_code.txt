@@ -1,0 +1,13 @@
+2002= API-service can't connect to grpc host
+2003= Error in grpc connection
+2401= Username Not Found
+2403= Username already exists
+2406= Email already exists
+2407= PhoneNumber already exists
+2408= Incorrect username or password
+2409= Not enough permissions
+2411= The new roll is the same as the old roll
+2412= The new password is the same as the old password
+2413= The new email is the same as the old email
+2414= The new name is the same as the old name
+2415= The new phone_number is the same as the old phone_number
