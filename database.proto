@@ -15,12 +15,13 @@ enum UserRole {
 }
 
 message RequestNewUser {
+    UserRole role = 5;
+
     string name = 1;
     string username = 2;
     string password = 3;
     string phone_number = 4;
-    optional string email = 5;
-    UserRole role = 6;
+    optional string email = 6;
 }
 
 message RequestModifyUserPassword {
@@ -29,8 +30,8 @@ message RequestModifyUserPassword {
 }
 
 message RequestModifyUserRole {
-    string username = 1;
     UserRole role = 2;
+    string username = 1;
 }
 
 message RequestModifyUserInfo {
@@ -54,12 +55,14 @@ message BaseResponse {
 }
 
 message UserInfo {
-    string username = 1;
-    string name = 2;
-    string password = 3;
-    optional string email = 4;
-    string phone_number = 5;
-    UserRole role = 6;
+    UserRole role = 7;
+
+    int32 user_id = 1;
+    string username = 2;
+    string name = 3;
+    string password = 4;
+    optional string email = 5;
+    string phone_number = 6;
 }
 
 message ResponseUserInfo {
