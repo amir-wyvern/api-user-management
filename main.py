@@ -1,9 +1,13 @@
-from fastapi import FastAPI
+from dotenv import load_dotenv
 
+load_dotenv()
+
+from fastapi import FastAPI
 from router import (
     auth,
     user
 )
+
 
 description = """
 This is a simple service for managing users that connects to the database service via grpc and includes crud operations on the database. 🚀
