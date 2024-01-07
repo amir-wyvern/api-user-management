@@ -49,7 +49,7 @@ class UserInfoResponse(BaseModel):
 
     username: str
     name: str 
-    email:  EmailStr
+    email:  Optional[EmailStr] = Field(default=None)
     phone_number: PhoneNumberStr
     role: UserRole
 
@@ -77,9 +77,9 @@ class UserUpdateRole(BaseModel):
     
 class UserUpdateInfo(BaseModel):
 
-    new_email: Optional[EmailStr]
-    new_phone_number: Optional[PhoneNumberStr] 
-    new_name: Optional[str] 
+    new_email: Optional[EmailStr] = Field(default=None)
+    new_phone_number: Optional[PhoneNumberStr] = Field(default=None)
+    new_name: Optional[str] = Field(default=None)
 
 
 class UserDelete(BaseModel):
@@ -102,8 +102,9 @@ class Token(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    user_id: int | None = None
-    role: UserRole | None = None
+    user_id: int 
+    username: str 
+    role: UserRole 
     scopes: List[str] = []
 
 class TokenUser(BaseModel):
