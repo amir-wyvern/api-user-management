@@ -5,7 +5,7 @@ from passlib.context import CryptContext
 from typing import Annotated
 from pydantic import ValidationError
 from jose import JWTError, jwt
-from schemas import TokenUser
+from schemas import TokenUser, UserRole
 from fastapi import (
   Depends,
   HTTPException,
@@ -17,23 +17,6 @@ from schemas import TokenData
 from redis import Redis
 from cache.session import get_redis_cache
 from cache.functions import get_token
-import logging
-
-# Create a file handler to save logs to a file
-logger = logging.getLogger('auth_router.log') 
-logger.setLevel(logging.DEBUG)
-
-file_handler = logging.FileHandler('auth_router.log') 
-file_handler.setLevel(logging.DEBUG) 
-formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s') 
-file_handler.setFormatter(formatter) 
-logger.addHandler(file_handler) 
-
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
-console_handler.setFormatter(formatter)
-logger.addHandler(console_handler)
 
 
 OAUTH2_SECRET_KEY = os.getenv('OAUTH2_SECRET_KEY')
@@ -43,10 +26,11 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 oauth2_scheme = OAuth2PasswordBearer(
     tokenUrl="/auth/login",
-    scopes={"agent": "agent user for access items", "admin": "administrator user"},
+    scopes={"USER": "normal user", "ADMIN": "administrator user"},
 )
 
 def verify_password(plain_password, hashed_password):
+
     return pwd_context.verify(plain_password, hashed_password)
 
 
@@ -72,11 +56,7 @@ async def get_current_user(security_scopes: SecurityScopes, token: Annotated[str
 
     try:
         payload = jwt.decode(token, OAUTH2_SECRET_KEY, algorithms=[OAUTH2_ALGORITHM])
-        user_id: str = payload.get("user")
-
-        if user_id is None: 
-            logger.debug(f'[get auth token] token expired')
-            raise credentials_exception
+        user_id: int = payload.get("user_id")
         
         token = get_token(user_id, cache_db)
 
@@ -87,11 +67,12 @@ async def get_current_user(security_scopes: SecurityScopes, token: Annotated[str
                 headers={"WWW-Authenticate": authenticate_value},
             )
 
-        token_scopes = payload.get("scopes", [])
+        scopes = payload.get("scopes", [])
         role = payload.get("role", None)
+
         username = payload.get("username", None)
-        token_data = TokenData(scopes= token_scopes, user_id= user_id, role= role, username= username)
-    
+        token_data = TokenData(user_id= user_id, role= role, scopes= scopes)
+        
     except (JWTError, ValidationError):
         raise credentials_exception
 
@@ -106,14 +87,14 @@ async def get_current_user(security_scopes: SecurityScopes, token: Annotated[str
                 headers={"WWW-Authenticate": authenticate_value},
             )
         
-    return TokenUser(user_id=user_id, role=role)
+    return TokenUser(user_id=user_id, role=role, username= username)
 
 
-async def get_normal_user(current_user: Annotated[TokenUser, Security(get_current_user, scopes=["user"])]):
+async def get_normal_user(current_user: Annotated[TokenUser, Security(get_current_user, scopes=["USER"])]):
     
     return current_user
 
-async def get_admin_user(current_user: Annotated[TokenUser, Security(get_current_user, scopes=["admin", "user"])]):
+async def get_admin_user(current_user: Annotated[TokenUser, Security(get_current_user, scopes=["ADMIN", "USER"])]):
         
     return current_user
 
