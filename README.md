@@ -55,7 +55,7 @@ docker compose up
 
 Now You can access to FastApi Docs 
 ```sh
-http://localhost/docs
+http://localhost:8585/docs
 ```
 
 ## License
