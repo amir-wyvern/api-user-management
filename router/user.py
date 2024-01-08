@@ -85,6 +85,8 @@ def create_new_user(request: UserRegister, current_user: TokenUser= Depends(get_
     if err:
         raise err
 
+    logger.info(f'[new] create new user was successfully [username: {current_user.username}]')
+
     return BaseResponse(**resp)
 
 
@@ -118,6 +120,8 @@ def edit_user_information(request: UserUpdateInfo, current_user: TokenUser= Depe
     if err:
         raise err
 
+    logger.info(f'[edit info] edit user information was successfully [username: {current_user.username}]')
+
     return BaseResponse(**resp)
 
 
@@ -142,6 +146,8 @@ def change_user_password(request: UserUpdatePassword, current_user: TokenUser= D
     if err:
         raise err
     
+    logger.info(f'[edit pass] edit user password was successfully [username: {current_user.username}]')
+
     return BaseResponse(**resp)
 
 @router.put('/role/edit', response_model= BaseResponse, responses= {500:{'model':HTTPError}, 404:{'model':HTTPError}, 409:{'model':HTTPError}} )
@@ -166,7 +172,7 @@ def change_user_role(request: UserUpdateRole, current_user: TokenUser= Depends(g
         raise err
     
     del_token(resp_user['user_id'], get_redis_cache().__next__())
-    logger.debug(f'[edit role] delete user token [caller: {current_user.username}]')
+    logger.info(f'[edit role] edit user role was successfully  [caller: {current_user.username}]')
     
     return BaseResponse(**resp)
 
@@ -190,7 +196,7 @@ def delete_user(request: UserDelete, current_user: TokenUser= Depends(get_admin_
         raise err
     
     del_token(resp_user.user_id, get_redis_cache().__next__())
-    logger.debug(f'[delete] delete user token [caller: {current_user.username}]')
+    logger.info(f'[delete] delete user token [caller: {current_user.username}]')
 
     return BaseResponse(**resp)
 
