@@ -195,7 +195,7 @@ def delete_user(request: UserDelete, current_user: TokenUser= Depends(get_admin_
     if err:
         raise err
     
-    del_token(resp_user.user_id, get_redis_cache().__next__())
+    del_token(resp_user['user_id'], get_redis_cache().__next__())
     logger.info(f'[delete] delete user token [caller: {current_user.username}]')
 
     return BaseResponse(**resp)
