@@ -71,8 +71,8 @@ async def get_current_user(security_scopes: SecurityScopes, token: Annotated[str
         role = payload.get("role", None)
 
         username = payload.get("username", None)
-        token_data = TokenData(user_id= user_id, role= role, scopes= scopes)
-        
+        token_data = TokenData(user_id= user_id, role= role, username= username, scopes= scopes)
+            
     except (JWTError, ValidationError):
         raise credentials_exception
 
