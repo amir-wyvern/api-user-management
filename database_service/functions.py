@@ -44,6 +44,7 @@ def get_user(caller: str, username: str, stub: DataBaseStub, logger: logging, fu
         return None, HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'message': 'Contact to support!', 'code': resp.code})
 
     resp_user = {
+        'user_id': resp.data.user_id,
         'username': resp.data.username,
         'password': resp.data.password,
         'name': resp.data.name,
