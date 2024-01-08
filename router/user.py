@@ -149,7 +149,7 @@ def change_user_role(request: UserUpdateRole, current_user: TokenUser= Depends(g
 
     logger.debug(f'[edit role] Receive a change_user_role request [caller: {current_user.username} -edit_username: {request.username} ]')
 
-    resp_user, err = get_user(current_user.username, request.username, stub, logger, 'edit password')
+    resp_user, err = get_user(current_user.username, request.username, stub, logger, 'edit role')
     if err:
         raise err
     
@@ -177,7 +177,7 @@ def delete_user(request: UserDelete, current_user: TokenUser= Depends(get_admin_
     
     logger.debug(f'[delete] Receive a delete_user request [caller: {current_user.username} -delete_username: {request.username} ]')
 
-    resp_user, err = get_user(current_user.username, request.username, stub, logger, 'edit password')
+    resp_user, err = get_user(current_user.username, request.username, stub, logger, 'delete')
     if err:
         raise err
     
