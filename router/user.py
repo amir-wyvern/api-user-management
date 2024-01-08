@@ -165,7 +165,7 @@ def change_user_role(request: UserUpdateRole, current_user: TokenUser= Depends(g
     if err:
         raise err
     
-    del_token(resp_user.user_id, get_redis_cache().__next__())
+    del_token(resp_user['user_id'], get_redis_cache().__next__())
     logger.debug(f'[edit role] delete user token [caller: {current_user.username}]')
     
     return BaseResponse(**resp)
