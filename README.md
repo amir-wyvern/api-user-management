@@ -58,6 +58,10 @@ Now You can access to FastApi Docs
 http://localhost:8585/docs
 ```
 
+## Architecture
+
+![Architecture](https://github.com/amir-wyvern/api-user-management/blob/main/pic.png)
+
 ## License
 
 MIT
