@@ -1,15 +1,17 @@
-from typing import Annotated
 from fastapi import Depends, HTTPException, status, APIRouter
+from auth.auth import verify_password, create_access_token
 from fastapi.security import OAuth2PasswordRequestForm
 from grpc_utils.database_pb2_grpc import DataBaseStub
-from auth.auth import verify_password, create_access_token
+from database_service.functions import get_user
 from database_service.session import get_grpc
+from grpc._channel import _InactiveRpcError
 from cache.session import get_redis_cache
 import grpc_utils.database_pb2 as pb2
-from schemas import Token, HTTPError
-from redis import Redis
 from cache.functions import set_token
-from grpc._channel import _InactiveRpcError
+from schemas import Token, HTTPError
+from datetime import datetime, timedelta
+from typing import Annotated
+from redis import Redis
 import logging
 
 # Create a file handler to save logs to a file
@@ -27,11 +29,6 @@ console_handler.setLevel(logging.DEBUG)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s | %(message)s')
 console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
-
-map_enums = {
-    0 : 'ADMIN',
-    1 : 'USER'
-}
 
 router = APIRouter(prefix='/auth', tags=['Auth'])
 
@@ -54,37 +51,31 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
                 detail= {'code': 2001, 'message': "Unkown Scopes"},
         )
 
-    try:
-
-        resp_user = stub.GetUser(pb2.RequestUserInfo(**{'username': form_data.username}))
+    resp_user, err = get_user(form_data.username, form_data.username, stub, logger, 'login')
+    if err:
+        raise err
     
-    except _InactiveRpcError as InactiveRpcError:
-        logger.error(f"[login] API-service can't connect to grpc host [user:{form_data.username} -error: {InactiveRpcError}]")
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2002, 'message': "API-service can't connect to grpc host"})
-
-    except Exception as e :
-        logger.error(f'[login] Error in grpc connection [user:{form_data.username} -error: {e}]')
-        raise HTTPException(status_code= status.HTTP_500_INTERNAL_SERVER_ERROR, detail={'code': 2003, 'message': "Error in grpc connection"})
-
-    if resp_user.code != 1200:
-        logger.debug(f'[login] User not found [username: {form_data.username}]')
-        raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail={'code': 2408,'message':'Incorrect username or password'})
-    
-    if map_enums[resp_user.data.role] not in scopes:
+    if resp_user['role'] not in scopes:
         logger.debug(f'[login] Not enough permissions [username: {form_data.username}]')
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= {'code': 2409, 'message': 'Not enough permissions'})
 
-    check_password = verify_password(form_data.password, resp_user.data.password )
+    check_password = verify_password(form_data.password, resp_user['password'] )
 
     if not check_password:
         logger.debug(f'[login] Incorrect username or password [username: {form_data.username}]')
         raise HTTPException(status_code= status.HTTP_401_UNAUTHORIZED, detail= {'code': 2408, 'message': "Incorrect username or password"})
     
     access_token = create_access_token(
-        data={"user_id": resp_user.data.user_id, 'username': resp_user.data.username, 'role': map_enums[resp_user.data.role], "scopes": scopes}
+        data={
+            "user_id": resp_user['user_id'],
+            'username': resp_user['username'],
+            'role': resp_user['role'],
+            'exp': datetime.utcnow() + timedelta(days=7),
+            "scopes": scopes
+            }
     )
 
-    set_token(resp_user.data.user_id, access_token, cache_db)
+    set_token(resp_user['user_id'], access_token, cache_db)
     
     return {"access_token": access_token, "token_type": "bearer"}
 
