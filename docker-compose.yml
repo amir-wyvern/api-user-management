@@ -6,25 +6,28 @@ services:
       - cache_db
   
     networks:
-      - net
+      - share-net
     
     environment:
-      OAUTH2_SECRET_KEY: 09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
+      OAUTH2_SECRET_KEY: test_09d25e094faa6ca2556c818166b7a9563b93f7099f6f0f4caa6cf63b88e8d3e7
       OAUTH2_ALGORITHM: HS256
-      GRPC_HOST: localhost
+      GRPC_HOST: grpc_service
       GRPC_PORT: 3333
       CACHE_URL: redis://cache_db:6379
 
-    command: ["python", "main.py"]
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
+
+    ports:
+      - "8585:80"
 
   cache_db:
     image: redis
     restart: always
     
     networks:
-      - net
+      - share-net
 
 
 networks:
-  net:
-    driver: bridge
+  share-net:
+    external: true
